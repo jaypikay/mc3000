@@ -215,15 +215,6 @@ class MC3000(object):
         return self.device.read(self.ep_in.bEndpointAddress, expected_length).tobytes()
 
 
-# Code not used, yet
-def encryption(buffer):
-    num = 0
-    while num < 59392:
-        for index in range(64):
-            buffer[num + index] ^= buffer[num + index + 64]
-        num += 128
-
-
 if __name__ == '__main__':
     print('[ ] Initializing USB Connection')
     mc3000 = MC3000()
