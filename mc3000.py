@@ -2,52 +2,12 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8:ts=8:et:sw=4:sts=4
 #
-# Copyright © 2017 jpk <jpk@thor>
+# Copyright © 2017 jpk <jpk@goatpr0n.de>
 #
 # Distributed under terms of the MIT license.
 
 """
-ret returns data:
-
-offset 00h defines packet type:
-
- * 5Ah: Get System Data
- * 5Fh: Get Charge Data
-
-# Machine SN
-# num1 = 0
-# str1 = ''
-# for i in range(16):
-#     if i < 15:
-#         num1 += ret[17 + i]
-#     str2 = '{:02X}'.format(num1)
-#     str1 += str2
-# print(str1)
-
-s:{c}^{n}'.format(s='str', n=5, c='x')
-
-# 7 -> 2: Dummy, 1: Simple, 0 Advanced
-# 8 -> 1: Farenheit, 0: Celcius
-# 9 -> 16: silent ... 1: loud, 0: off
-# 16:22 --> core_type expects 100083
-# core_type = bytes(ret[16:22]).decode('utf-8')
-# 22 -> upgrade type
-# 23 -> encrypted
-# 24:25: -> customer id: [25] * 256 + [26]
-#customer_id = ret[24] * 256 + ret[25]
-#print(customer_id)
-# 26 -> language
-#language_id = ret[26]
-#print(language_id)
-# 28:29 -> sovware version
-#print(ret[27] * 1.0 + ret[28] * 1.0 / 100.0)
-# 30 -> HW Version
-#print(ret[29])
-# 31 -> reserved
-# 32 -> checksum
-#print(ret[31])
 """
-
 
 import usb.core
 import usb.util
@@ -85,7 +45,6 @@ WORK_PROGRESS = {
     1: 'Charging',
     4: 'Finished'
 }
-
 
 CMD_PACKET_HEADER = b'\x0f\x04'
 CMD_PACKET_TAIL = b'\xff\xff'
@@ -129,7 +88,6 @@ class MC3000(object):
         hardware_version = response[29]
         reserved = response[30]
         checksum = response[31]
-        # hardcoded for now
 
         crc = 0
         machine_id = ''
@@ -257,6 +215,7 @@ class MC3000(object):
         return self.device.read(self.ep_in.bEndpointAddress, expected_length).tobytes()
 
 
+# Code not used, yet
 def encryption(buffer):
     num = 0
     while num < 59392:
@@ -269,14 +228,6 @@ if __name__ == '__main__':
     print('[ ] Initializing USB Connection')
     mc3000 = MC3000()
     print(mc3000.get_machine_info())
-
-    # minimal packet for get_system_data
-    #print('[ ] Get System Data')
-    #packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
-    #hexdump(packet)
-    #mc3000.send_raw(packet)
-    #response = mc3000.read()
-    #hexdump(response)
 
     batteries = mc3000.get_battery_data()
     for battery in batteries:
