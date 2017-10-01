@@ -118,6 +118,7 @@ class MC3000(object):
         packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
         self.send_raw(packet)
         response = self.read()
+        # hexdump(response)
 
         core_type = response[16:22].decode('utf-8')
         upgrade_type = response[22]
