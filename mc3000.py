@@ -56,18 +56,19 @@ from collections import namedtuple
 from struct import pack
 
 
-system_data = namedtuple('machine_info',
+MachineInfo = namedtuple('machine_info',
                          ['core_type', 'upgrade_type', 'is_encrypted', 'customer_id',
                           'language_id', 'software_version', 'hardware_version', 'reserved',
                           'checksum', 'machine_id'])
 
-charge_data = namedtuple('charge_data',
+ChargerInfo = namedtuple('charge_data',
                          ['work', 'type', 'mode', 'cycle_count', 'cycle_delay', 'cycle_mode'])
 
-battery_data = namedtuple('battery_data',
-                          ['caps', 'cur', 'dCur', 'cut_volt', 'end_volt', 'end_cur', 'end_dcur',
-                           'peak_sense', 'trickle', 'hold_volt', 'cut_temp', 'cur_temp',
-                           'tem_unit'])
+Battery = namedtuple('battery_data',
+                     ['slot', 'work', 'type', 'mode', 'caps', 'cur', 'dCur', 'cut_volt',
+                      'end_volt', 'end_cur', 'end_dcur', 'cycle_count', 'cycle_delay',
+                      'cycle_mode','peak_sense', 'trickle', 'hold_volt', 'cut_temp', 'cut_time',
+                      'tem_unit'])
 
 #                          ['work', 'mAh', 'time', 'voltage', 'current', 'temp_ext',
 #                           'temp_int', 'impedance_int', 'cells'])
@@ -81,6 +82,8 @@ BATTERY_TYPE = {
     5: 'NiZn',
     6: 'Eneloop',
 }
+TEM_UNIT = ('°C', '°F')
+
 
 CMD_PACKET_HEADER = b'\x0f\x04'
 CMD_PACKET_TAIL = b'\xff\xff'
@@ -105,12 +108,14 @@ class MC3000(object):
         self.ep_in = self.device[0][(0, 0)][0]
         self.ep_out = self.device[0][(0, 0)][1]
 
-        self.get_device_data()
+        self.machine_info = self.get_machine_info()
+        self.battery_data = self.get_battery_data()
 
-    def get_device_data(self):
+    def get_machine_info(self):
         packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
         self.send_raw(packet)
         response = self.read()
+
         core_type = response[16:22].decode('utf-8')
         upgrade_type = response[22]
         is_encrypted = response[23] == b'\x01'
@@ -135,10 +140,45 @@ class MC3000(object):
         crc += 1
         if not crc == checksum:
             raise Exception('Checksum error in device data packet')
-        self.system_data = system_data(core_type, upgrade_type, is_encrypted, customer_id,
-                                       language_id, software_version, hardware_version,
-                                       reserved, checksum, machine_id)
+        self.system_data = MachineInfo(core_type, upgrade_type, is_encrypted, customer_id,
+                                       language_id, software_version, hardware_version, reserved,
+                                       checksum, machine_id)
         return self.system_data
+
+    def get_battery_data(self):
+        batteries = []
+        for slot in range(4):
+            print('[ ] Read charger data slot #{}'.format(slot + 1))
+            self.send(CMD_READ_CHARGER_DATA, slot)
+            response = self.read()
+
+            slot = response[1]
+            work = response[2]
+            battery_type = BATTERY_TYPE[response[3]]
+            mode = response[4]
+            caps = response[5] << 8 | response[6]
+            cur = response[9] << 8 | response[10]
+            dcur = response[12] << 8 | response[13]
+            cut_volt = response[15] << 8 | response[16]
+            end_volt = response[18] << 8 | response[19]
+            end_cur = response[21] << 8 | response[22]
+            end_dcur = response[24] << 8 | response[25]
+            cycle_count = response[26]
+            cycle_delay = response[27]
+            cycle_mode = response[28]
+            peak_sense = response[28]
+            trickle = response[30] * 10
+            hold_volt = response[32] << 8 | response[33]
+            cut_temp = response[35] * 10
+            cut_time = response[37] << 8 | response[38]
+            tem_unit = TEM_UNIT[response[40]]
+
+            battery = Battery(slot, work, battery_type, mode, caps, cur, dcur, cut_volt, end_volt,
+                              end_cur, end_dcur, cycle_count, cycle_delay, cycle_mode, peak_sense,
+                              trickle, hold_volt, cut_temp, cut_time, tem_unit)
+            batteries.append(battery)
+        return batteries
+
 
     def send_raw(self, buffer):
         return self.device.write(self.ep_out.bEndpointAddress, buffer)
@@ -147,7 +187,6 @@ class MC3000(object):
         if cmd == CMD_READ_CHARGER_DATA:
             slotcmd = (int.from_bytes(cmd, byteorder='little')) + buffer
             cmd_packet = pack('2scxbb2s', CMD_PACKET_HEADER, cmd, buffer, slotcmd, CMD_PACKET_TAIL)
-            hexdump(cmd_packet)
             self.send_raw(cmd_packet)
 
     def read(self, expected_length=64):
@@ -170,7 +209,7 @@ if __name__ == '__main__':
 
     print('[ ] Initializing USB Connection')
     mc3000 = MC3000()
-    print(mc3000.get_device_data())
+    print(mc3000.get_machine_info())
 
     # minimal packet for get_system_data
     print('[ ] Get System Data')
@@ -180,12 +219,40 @@ if __name__ == '__main__':
     response = mc3000.read()
     hexdump(response)
 
-    for slot in range(4):
-        print('[ ] Read charger data slot #{}'.format(slot + 1))
-        mc3000.send(CMD_READ_CHARGER_DATA, slot)
-        response = mc3000.read()
-        battery_type = BATTERY_TYPE[response[3]]
-        print(battery_type)
+    batteries = mc3000.get_battery_data()
+    # for slot in range(4):
+    #     print('[ ] Read charger data slot #{}'.format(slot + 1))
+    #     mc3000.send(CMD_READ_CHARGER_DATA, slot)
+    #     response = mc3000.read()
+
+    #     slot = response[1]
+    #     work = response[2]
+    #     battery_type = BATTERY_TYPE[response[3]]
+    #     mode = response[4]
+    #     caps = response[5] << 8 | response[6]
+    #     cur = response[9] << 8 | response[10]
+    #     dcur = response[12] << 8 | response[13]
+    #     cut_volt = response[15] << 8 | response[16]
+    #     end_volt = response[18] << 8 | response[19]
+    #     end_cur = response[21] << 8 | response[22]
+    #     end_dcur = response[24] << 8 | response[25]
+    #     cycle_count = response[26]
+    #     cycle_delay = response[27]
+    #     cycle_mode = response[28]
+    #     peak_sense = response[28]
+    #     trickle = response[30] * 10
+    #     hold_volt = response[32] << 8 | response[33]
+    #     cut_temp = response[35] * 10
+    #     cut_time = response[37] << 8 | response[38]
+    #     tem_unit = TEM_UNIT[response[40]]
+
+    #     battery = Battery(slot, work, battery_type, mode, caps, cur, dcur, cut_volt, end_volt,
+    #                       end_cur, end_dcur, cycle_count, cycle_delay, cycle_mode, peak_sense,
+    #                       trickle, hold_volt, cut_temp, cut_time, tem_unit)
+    #     batteries.append(battery)
+    #     #print(battery_type)
+    for battery in batteries:
+        print(battery)
 
     # print('[ ] Get ... Data')
     # packet = b'\x0f\x04\x5f\x00\x00\x5f\xff\xff'
