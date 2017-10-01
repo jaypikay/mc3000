@@ -62,14 +62,14 @@ MachineInfo = namedtuple('machine_info',
                           'checksum', 'machine_id'])
 
 ProgressInfo = namedtuple('charge_data',
-                          ['slot', 'work_time', 'voltage', 'current', 'caps', 'caps_decimal',
-                           'dcaps', 'bat_tem', 'inner_resistance'])
+                          ['slot', 'work', 'work_time', 'voltage', 'current', 'caps',
+                           'caps_decimal', 'dcaps', 'bat_tem', 'inner_resistance', 'checksum'])
 
 Battery = namedtuple('battery_data',
                      ['slot', 'work', 'type', 'mode', 'caps', 'cur', 'dCur', 'cut_volt',
                       'end_volt', 'end_cur', 'end_dcur', 'cycle_count', 'cycle_delay',
-                      'cycle_mode','peak_sense', 'trickle', 'hold_volt', 'cut_temp', 'cut_time',
-                      'tem_unit'])
+                      'cycle_mode', 'peak_sense', 'trickle', 'hold_volt', 'cut_temp', 'cut_time',
+                      'tem_unit', 'checksum'])
 
 BATTERY_TYPE = {
     0: 'LiIon',
@@ -81,6 +81,10 @@ BATTERY_TYPE = {
     6: 'Eneloop',
 }
 TEM_UNIT = ('°C', '°F')
+WORK_PROGRESS = {
+    1: 'Charging',
+    4: 'Finished'
+}
 
 
 CMD_PACKET_HEADER = b'\x0f\x04'
@@ -144,12 +148,21 @@ class MC3000(object):
                                        checksum, machine_id)
         return self.system_data
 
+    def packet_checksum(self, data_packet):
+        crc = 0
+        for i in range(0, 63):
+            crc += data_packet[i]
+            crc &= 0xff
+        return crc
+
     def get_battery_data(self):
         batteries = []
         for slot in range(4):
             print('[ ] Read charger data slot #{}'.format(slot + 1))
             self.send(CMD_READ_CHARGER_DATA, slot)
             response = self.read()
+            if response[-1] != self.packet_checksum(response):
+                continue
 
             slot = response[1]
             work = response[2]
@@ -171,10 +184,11 @@ class MC3000(object):
             cut_temp = response[35] * 10
             cut_time = response[37] << 8 | response[38]
             tem_unit = TEM_UNIT[response[40]]
+            checksum = response[63]
 
             battery = Battery(slot, work, battery_type, mode, caps, cur, dcur, cut_volt, end_volt,
                               end_cur, end_dcur, cycle_count, cycle_delay, cycle_mode, peak_sense,
-                              trickle, hold_volt, cut_temp, cut_time, tem_unit)
+                              trickle, hold_volt, cut_temp, cut_time, tem_unit, checksum)
             batteries.append(battery)
         return batteries
 
@@ -184,23 +198,24 @@ class MC3000(object):
             print('[ ] Read progress data slot #{}'.format(slot + 1))
             self.send(CMD_READ_PROGRESS_DATA, slot)
             response = self.read()
-            hexdump(response)
+            if response[-1] != self.packet_checksum(response):
+                continue
+            # hexdump(response)
 
-            slot = response[1]
-            num2 = response[5]
+            # unknown values
             # num3 = response[2]
             # num4 = response[3]
             # num5 = response[4]
-            # unknown
-            # print(num2)
-            # num6 = 0
-            # if num2 >= 128:
-            #     num6 = num2 - 128 + 1
             # print('num3  {}'.format(num3))
             # print('num4  {}'.format(num4))
             # print('num5  {}'.format(num5))
             # print('num6  {}'.format(num6))
 
+            slot = response[1]
+            work = response[5]
+            num6 = 0
+            if work >= 128:
+                num6 = work - 128 + 1
             work_time = response[6] << 8 | response[7]
             voltage = response[8] << 8 | response[9]
             # why?
@@ -210,16 +225,17 @@ class MC3000(object):
             caps = response[12] << 8 | response[13]
             caps_decimal = response[24]
             # purpose unknown
-            if num2 == 2:
+            if work == 2:
                 dcaps = caps
             else:
                 dcaps = None
             bat_tem = response[14] << 8 | response[15]
             bat_tem &= 0x7fff
             inner_resistance = response[16] << 8 | response[17]
+            checksum = response[63]
 
-            status = ProgressInfo(slot, work_time, voltage, current, caps, caps_decimal, dcaps,
-                                  bat_tem, inner_resistance)
+            status = ProgressInfo(slot, work, work_time, voltage, current, caps, caps_decimal,
+                                  dcaps, bat_tem, inner_resistance, checksum)
             batteries.append(status)
         return batteries
 
@@ -249,41 +265,21 @@ def encryption(buffer):
 
 
 if __name__ == '__main__':
-    #packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff\x00\x05\xdc\x01\xf4\x0b\xb8\x10\x68\x00\x96\x01\xf4\x01'
-    #packet += b'\x00\x00\x00\x03\x00\x00\x2d\x00\xb4\x00\x00\x95\xff\xff\x00\x00\x00\x00\x00\x00\x00'
-    #packet += b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    #hexdump(packet)
-
     print('[ ] Initializing USB Connection')
     mc3000 = MC3000()
     print(mc3000.get_machine_info())
 
     # minimal packet for get_system_data
-    print('[ ] Get System Data')
-    packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
-    hexdump(packet)
-    mc3000.send_raw(packet)
-    response = mc3000.read()
-    hexdump(response)
+    #print('[ ] Get System Data')
+    #packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
+    #hexdump(packet)
+    #mc3000.send_raw(packet)
+    #response = mc3000.read()
+    #hexdump(response)
 
     batteries = mc3000.get_battery_data()
     for battery in batteries:
         print(battery)
-
-    print('[ ] Get ... Data')
-    packet = b'\x0f\x04\x55\x00\x00\x55\xff\xff'
-    hexdump(packet)
-    mc3000.send_raw(packet)
-    response = mc3000.read()
-
     status = mc3000.get_charging_progress()
     for battery in status:
         print(battery)
-
-    # for cycle in range(10):
-    #     print('[ ] #{}: Reading random output...'.format(cycle))
-    #     try:
-    #         response = mc3000.read()
-    #         hexdump(response)
-    #     except usb.core.USBError:
-    #         print('[!] #{}: No data arrived on time'.format(cycle))
