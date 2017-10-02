@@ -119,7 +119,6 @@ class MC3000(object):
     def get_battery_data(self):
         batteries = []
         for slot in range(4):
-            print('[ ] Read charger data slot #{}'.format(slot + 1))
             self.send(CMD_READ_CHARGER_DATA, slot)
             response = self.read()
             if response[-1] != self.packet_checksum(response):
@@ -156,7 +155,6 @@ class MC3000(object):
     def get_charging_progress(self):
         batteries = []
         for slot in range(4):
-            print('[ ] Read progress data slot #{}'.format(slot + 1))
             self.send(CMD_READ_PROGRESS_DATA, slot)
             response = self.read()
             if response[-1] != self.packet_checksum(response):
@@ -218,7 +216,6 @@ class MC3000(object):
 
 
 if __name__ == '__main__':
-    print('[ ] Initializing USB Connection')
     mc3000 = MC3000()
     print(mc3000.get_machine_info())
 
