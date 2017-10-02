@@ -57,6 +57,8 @@ class MC3000(object):
 
     def __init__(self):
         self.device = usb.core.find(idVendor=0x0000, idProduct=0x0001)
+        if not self.device:
+            raise Exception('Device not found')
         # check if device is already claimed and free it
         for config in self.device:
             for config_index in range(config.bNumInterfaces):
