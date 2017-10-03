@@ -152,9 +152,16 @@ class MC3000(object):
             batteries.append(battery)
         return batteries
 
-    def get_charging_progress(self):
+    def get_charging_progress(self, battery_slot='all'):
         batteries = []
-        for slot in range(4):
+
+        # All slots
+        if battery_slot == 'all':
+            battery_slot = range(4)
+        else:
+            battery_slot = [battery_slot]
+
+        for slot in battery_slot:
             self.send(CMD_READ_PROGRESS_DATA, slot)
             response = self.read()
             if response[-1] != self.packet_checksum(response):
@@ -224,5 +231,9 @@ if __name__ == '__main__':
         print(battery)
 
     status = mc3000.get_charging_progress()
+    for battery in status:
+        print(battery)
+
+    status = mc3000.get_charging_progress(battery_slot=2)
     for battery in status:
         print(battery)
