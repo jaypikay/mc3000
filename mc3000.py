@@ -9,11 +9,11 @@
 """
 """
 
+from struct import pack
+from collections import namedtuple
+from hexdump import hexdump
 import usb.core
 import usb.util
-from hexdump import *
-from collections import namedtuple
-from struct import pack
 
 
 MachineInfo = namedtuple('machine_info',
@@ -222,6 +222,7 @@ if __name__ == '__main__':
     batteries = mc3000.get_battery_data()
     for battery in batteries:
         print(battery)
+
     status = mc3000.get_charging_progress()
     for battery in status:
         print(battery)
