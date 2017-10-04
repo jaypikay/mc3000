@@ -12,6 +12,7 @@
 
 import sys
 import time
+import csv
 from collections import namedtuple
 from matplotlib import pyplot as plt
 import numpy as np
@@ -32,16 +33,27 @@ if __name__ == '__main__':
         for slot_index, plot in enumerate(slot):
             plot.set_title(TITLES[row_index])
     for i in range(len(slotplots[0])):
-        battery_stats.append({'voltage': [], 'current': [], 'bat_tem': []})
+        battery_stats.append({'voltage': [], 'current': [], 'bat_tem': [], 'ts': []})
     print(battery_stats)
 
-    fig.subplots_adjust(top=0.98, bottom=0.02, left=0.03, right=0.99, hspace=0.15, wspace=0.15)
+    fig.subplots_adjust(top=0.98, bottom=0.02, left=0.06, right=0.99, hspace=0.15, wspace=0.15)
+
+    battery_fd = []
+    for i in range(len(slotplots[0])):
+        timestamp = int(time.time())
+        fields = ['voltage', 'current', 'bat_tem', 'ts']
+        csvfile = csv.DictWriter(open('Battery-{}_{}.csv'.format(timestamp, i), 'w', newline=''),
+                                 delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL,
+                                 fieldnames=fields)
+        csvfile.writeheader()
+        battery_fd.append(csvfile)
 
     try:
         x_time = 0
         x_axis = []
         while True:
             try:
+                timestamp = int(time.time())
                 batteries = mc3k.get_charging_progress(battery_slot='all')
             except:
                 print('Error while reading from device. Skipping this cycle...')
@@ -49,9 +61,17 @@ if __name__ == '__main__':
             x_axis.append(x_time)
             x_time += 1
             for i, battery in enumerate(batteries):
-                battery_stats[i]['voltage'].append(battery.voltage / 1000.0)
-                battery_stats[i]['current'].append(battery.current / 1000.0)
-                battery_stats[i]['bat_tem'].append(battery.bat_tem / 10.0)
+                voltage = battery.voltage / 1000.0
+                current = battery.current / 1000.0
+                bat_tem = battery.bat_tem / 10.0
+                battery_stats[i]['voltage'].append(voltage)
+                battery_stats[i]['current'].append(current)
+                battery_stats[i]['bat_tem'].append(bat_tem)
+                battery_stats[i]['ts'].append(timestamp)
+
+                if battery.work > 0 and i == battery.slot:
+                    battery_fd[i].writerow({'voltage': voltage, 'current': current,
+                                            'bat_tem': bat_tem, 'ts': timestamp})
 
                 slotplots[0][i].plot(x_axis, battery_stats[i]['voltage'], color='r')
                 slotplots[1][i].plot(x_axis, battery_stats[i]['current'], color='g')
@@ -63,5 +83,6 @@ if __name__ == '__main__':
                 if len(slotplots[2][i].lines) > 1:
                     slotplots[2][i].lines[0].remove()
             plt.pause(1)
+            plt.tight_layout()
     except KeyboardInterrupt:
         sys.exit(0)
