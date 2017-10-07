@@ -21,7 +21,8 @@ RRD_CREATE = """rrdtool create {filename} --step=8 --start {start} \
 DS:voltage:GAUGE:8:0:4200 \
 DS:current:GAUGE:8:0:2000 \
 DS:bat_tem:GAUGE:8:0:100 \
-RRA:AVERAGE:0.5:1:1400"""
+RRA:AVERAGE:0.5:1:1400
+"""
 
 RRD_UPDATE = """rrdtool update {filename} {timestamp}:{voltage}:{current}:{bat_tem}"""
 
@@ -29,9 +30,10 @@ RRD_GRAPH = """rrdtool graph {png_file} --start {ts_start} --end {ts_end} --step
 DEF:batvoltage={rrd_file}:voltage:LAST \
 DEF:batcurrent={rrd_file}:current:LAST \
 DEF:batbat_tem={rrd_file}:bat_tem:LAST \
-LINE2:batvoltage#FF0000 \
-LINE2:batcurrent#0000FF \
-LINE1:batbat_tem#00FF00"""
+AREA:batvoltage#FF0000:Voltage \
+AREA:batcurrent#0000FF80:Current \
+LINE1:batbat_tem#00FF00:Temperature
+"""
 
 
 def execute_rrd_cmd(command_line):
