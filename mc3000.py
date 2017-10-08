@@ -69,11 +69,16 @@ class MC3000(object):
         self.interface = self.config[(0, 0)]
         usb.util.claim_interface(self.device, self.interface)
 
+        self.device.reset()
+
         self.ep_in = self.device[0][(0, 0)][0]
         self.ep_out = self.device[0][(0, 0)][1]
 
         self.machine_info = self.get_machine_info()
         self.battery_data = self.get_battery_data()
+
+    def close(self):
+        usb.util.dispose_resources(self.device)
 
     def get_machine_info(self):
         packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
