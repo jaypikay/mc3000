@@ -86,10 +86,7 @@ class MC3000(object):
         response = self.read()
         # hexdump(response)
 
-        try:
-            core_type = response[16:22].decode('utf-8')
-        except UnicodeDecodeError:
-            core_type = response[16:22]
+        core_type = response[16:22].decode('utf-8', errors='replace')
         upgrade_type = response[22]
         is_encrypted = response[23] == b'\x01'
         customer_id = response[24] * 256 + response[25]
