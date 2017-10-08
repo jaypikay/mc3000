@@ -52,7 +52,6 @@ def update_rrd(filename, battery):
 def graph_rrd(png_file, rrd_file, starttime, endtime):
     cmd = RRD_GRAPH.format(png_file=png_file, rrd_file=rrd_file,
                            ts_start=starttime, ts_end=endtime)
-    print(cmd)
     execute_rrd_cmd(cmd)
 
 
