@@ -37,7 +37,7 @@ if __name__ == '__main__':
                                                            battery=battery.type))
         create_rrd(RRD_NAME.format(index=battery.slot+1, date=timestamp), timestamp)
 
-    rptfile.write('Charger Report\n\nStart Time: {date}\nBatteries:\b'.format(date=timestamp))
+    rptfile.write('Charger Report\n\nStart Time: {date}\nBatteries:\n'.format(date=timestamp))
     for battery in mc3k.get_charging_progress():
         if battery.voltage > 0:
             rptfile.write(' - Battery in Slot #{slot}\n'.format(slot=battery.slot+1))
@@ -70,11 +70,12 @@ if __name__ == '__main__':
     end_ts = int(time.time())
 
     rptfile.write('Charging summary for Batteries:\n')
-    rptfile.write('End Time: {date}'.format(end_ts))
+    rptfile.write('End Time: {date}'.format(date=end_ts))
     for battery in mc3k.get_charging_progress():
         if battery.voltage > 0:
             rptfile.write(' - Battery in Slot #{slot}\n'.format(slot=battery.slot+1))
             rptfile.write('   Voltage: {voltage}\n'.format(voltage=battery.voltage))
+            rptfile.write('   Capacity: {caps}\n'.format(caps=battery.caps))
             rptfile.write('   Time: {time}\n'.format(time=battery.work_time))
             rptfile.write('   Temperature: {bat_tem}\n'.format(bat_tem=battery.bat_tem))
             rptfile.write('   Inner resistance: {ir}\n'.format(ir=battery.inner_resistance))
