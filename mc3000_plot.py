@@ -41,7 +41,7 @@ if __name__ == '__main__':
     battery_fd = []
     for i in range(len(slotplots[0])):
         timestamp = int(time.time())
-        fields = ['voltage', 'current', 'bat_tem', 'ts']
+        fields = ['ts', 'voltage', 'current', 'bat_tem']
         csvfile = csv.DictWriter(open('Battery-{}_{}.csv'.format(timestamp, i), 'w', newline=''),
                                  delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL,
                                  fieldnames=fields)
