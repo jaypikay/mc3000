@@ -8,6 +8,13 @@
 
 """
 MC300 Charger Monitoring - CLI Tool
+-----------------------------------
+
+The monitoring tool will observe the charging progress until all batteries are charged.
+
+During the monitoring progress, for each battery slot available a RRD file is created to record the
+progress. The progress itself is summurized in a report file. After the monitoring progress, a PNG
+file is rendered for each RRD file.
 """
 
 import time
