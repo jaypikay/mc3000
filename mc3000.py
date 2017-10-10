@@ -15,7 +15,6 @@ USB Interface library to communicate with the SKYRC MC3000 Battery Analyzer/Char
 
 from struct import pack
 from collections import namedtuple
-from hexdump import hexdump
 import usb.core
 import usb.util
 
@@ -128,7 +127,6 @@ class MC3000(object):
         packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
         self.send_raw(packet)
         response = self.read()
-        # hexdump(response)
 
         core_type = response[16:22].decode('utf-8', errors='replace')
         upgrade_type = response[22]
@@ -258,9 +256,8 @@ class MC3000(object):
             response = self.read()
             if response[-1] != self.packet_checksum(response):
                 continue
-            # hexdump(response)
 
-            # unknown values
+            #: TODO resolve unknown values
             # num3 = response[2]
             # num4 = response[3]
             # num5 = response[4]
@@ -272,6 +269,7 @@ class MC3000(object):
             slot = response[1]
             work = response[5]
             num6 = 0
+            #: TODO find out what *num6* is for
             if work >= 128:
                 num6 = work - 128 + 1
             work_time = response[6] << 8 | response[7]
