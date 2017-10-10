@@ -46,7 +46,8 @@ if __name__ == '__main__':
     rptfile.write('\n')
 
     try:
-        print('Recording charging progress...')
+        print('Starting charging progress...')
+        mc3k.start()
         while True:
             ts = int(time.time())
             try:
