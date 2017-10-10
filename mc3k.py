@@ -25,6 +25,7 @@ PNG_NAME = 'MC3000-{date}-Slot{index}.png'
 
 if __name__ == '__main__':
     mc3k = MC3000()
+    occupied_slots = []
 
     print('Preparing RRDs for battery slots...')
     timestamp = int(time.time())
@@ -43,23 +44,30 @@ if __name__ == '__main__':
             rptfile.write(' - Battery in Slot #{slot}\n'.format(slot=battery.slot+1))
             rptfile.write('   Voltage: {voltage}\n'.format(voltage=battery.voltage))
             rptfile.write('   Temperature: {bat_tem}\n'.format(bat_tem=battery.bat_tem))
+            occupied_slot.append(True)
+        else:
+            rptfile.write(' - Battery in Slot #{slot} not occupied\n'.format(slot=battery.slot+1))
     rptfile.write('\n')
 
     try:
         print('Starting charging progress...')
         mc3k.start()
-        while True:
+        # Can this be optimized?
+        batteries = mc3k.get_charging_progress()
+        while any(slot.work == 1 for slot in batteries):
             ts = int(time.time())
             try:
-                for battery in mc3k.get_charging_progress():
+                for battery in batteries:
                     dataset = {
                         'ts': ts,
                         'voltage': battery.voltage,
                         'current': battery.current,
                         'bat_tem': battery.bat_tem
                     }
-                    update_rrd(RRD_NAME.format(index=battery.slot+1, date=timestamp), dataset)
+                    if battery.work == 1:
+                        update_rrd(RRD_NAME.format(index=battery.slot+1, date=timestamp), dataset)
                 time.sleep(1)
+                batteries = mc3k.get_charging_progress()
             except USBError:
                 pass
     except KeyboardInterrupt:
@@ -79,6 +87,8 @@ if __name__ == '__main__':
             rptfile.write('   Time: {time}\n'.format(time=battery.work_time))
             rptfile.write('   Temperature: {bat_tem}\n'.format(bat_tem=battery.bat_tem))
             rptfile.write('   Inner resistance: {ir}\n'.format(ir=battery.inner_resistance))
+        else:
+            rptfile.write(' - Battery in Slot #{slot} not occupied\n'.format(slot=battery.slot+1))
     rptfile.close()
 
     print('Preparing graphs for battery slots...')
