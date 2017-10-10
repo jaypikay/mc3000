@@ -128,6 +128,14 @@ class MC3000(object):
             crc &= 0xff
         return crc
 
+    def start(self):
+        packet = b'\x0f\x03\x05\x00\x05\xff\xff'
+        self.send_raw(packet)
+
+    def stop(self):
+        packet = b'\x0f\x03\xfe\x00\xfe\xff\xff'
+        self.send_raw(packet)
+
     def get_battery_data(self):
         batteries = []
         for slot in range(4):
