@@ -12,7 +12,7 @@
 
 import sys
 import time
-import usb
+from usb.core import USBError
 
 from mc3000 import MC3000
 from mc3000rrd import *
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                     }
                     update_rrd(RRD_NAME.format(index=battery.slot+1, date=timestamp), dataset)
                 time.sleep(1)
-            except usb.core.USBError:
+            except USBError:
                 pass
     except KeyboardInterrupt:
         pass
