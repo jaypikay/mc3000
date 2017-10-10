@@ -10,7 +10,6 @@
 MC300 Charger Monitoring - CLI Tool
 """
 
-import sys
 import time
 from usb.core import USBError
 
