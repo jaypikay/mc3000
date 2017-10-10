@@ -33,6 +33,7 @@ LINE1:batbat_tem#00FF00:Temperature"""
 
 
 def execute_rrd_cmd(command_line):
+    print(command_line)
     subprocess.run(command_line.split(' '), stderr=subprocess.DEVNULL)
 
 

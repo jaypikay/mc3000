@@ -31,6 +31,13 @@ Battery = namedtuple('battery_data',
                       'cycle_mode', 'peak_sense', 'trickle', 'hold_volt', 'cut_temp', 'cut_time',
                       'tem_unit', 'checksum'])
 
+BATTERY_MODE = {
+    0: 'Charging',
+    1: 'Refreshing',
+    2: 'Storing', # Storage
+    3: 'Discharging',
+    4: 'Cycling',
+}
 BATTERY_TYPE = {
     0: 'LiIon',
     1: 'LiFe',
@@ -132,7 +139,7 @@ class MC3000(object):
             slot = response[1]
             work = response[2]
             battery_type = BATTERY_TYPE[response[3]]
-            mode = response[4]
+            mode = BATTERY_MODE[response[4]]
             caps = response[5] << 8 | response[6]
             cur = response[9] << 8 | response[10]
             dcur = response[12] << 8 | response[13]
