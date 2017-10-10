@@ -1,0 +1,7 @@
+MC3000 Charger Core Module
+==========================
+
+.. automodule:: mc3000
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -7,7 +7,7 @@
 # Distributed under terms of the MIT license.
 
 """
-
+MC300 Charger Monitoring - CLI Tool
 """
 
 import sys
