@@ -69,11 +69,16 @@ class MC3000(object):
         self.interface = self.config[(0, 0)]
         usb.util.claim_interface(self.device, self.interface)
 
+        self.device.reset()
+
         self.ep_in = self.device[0][(0, 0)][0]
         self.ep_out = self.device[0][(0, 0)][1]
 
         self.machine_info = self.get_machine_info()
         self.battery_data = self.get_battery_data()
+
+    def close(self):
+        usb.util.dispose_resources(self.device)
 
     def get_machine_info(self):
         packet = b'\x0f\x04\x5a\x00\x04\x5e\xff\xff'
@@ -81,7 +86,7 @@ class MC3000(object):
         response = self.read()
         # hexdump(response)
 
-        core_type = response[16:22].decode('utf-8')
+        core_type = response[16:22].decode('utf-8', errors='replace')
         upgrade_type = response[22]
         is_encrypted = response[23] == b'\x01'
         customer_id = response[24] * 256 + response[25]

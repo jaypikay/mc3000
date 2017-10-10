@@ -14,15 +14,12 @@ import sys
 import csv
 import subprocess
 
-from mc3000 import MC3000
-
 
 RRD_CREATE = """rrdtool create {filename} --step=8 --start {start} \
 DS:voltage:GAUGE:8:0:4200 \
 DS:current:GAUGE:8:0:2000 \
 DS:bat_tem:GAUGE:8:0:100 \
-RRA:AVERAGE:0.5:1:1400
-"""
+RRA:AVERAGE:0.5:1:1400"""
 
 RRD_UPDATE = """rrdtool update {filename} {timestamp}:{voltage}:{current}:{bat_tem}"""
 
@@ -32,8 +29,7 @@ DEF:batcurrent={rrd_file}:current:LAST \
 DEF:batbat_tem={rrd_file}:bat_tem:LAST \
 AREA:batvoltage#FF0000:Voltage \
 AREA:batcurrent#0000FF80:Current \
-LINE1:batbat_tem#00FF00:Temperature
-"""
+LINE1:batbat_tem#00FF00:Temperature"""
 
 
 def execute_rrd_cmd(command_line):
@@ -56,7 +52,6 @@ def update_rrd(filename, battery):
 def graph_rrd(png_file, rrd_file, starttime, endtime):
     cmd = RRD_GRAPH.format(png_file=png_file, rrd_file=rrd_file,
                            ts_start=starttime, ts_end=endtime)
-    print(cmd)
     execute_rrd_cmd(cmd)
 
 
