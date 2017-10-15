@@ -58,6 +58,7 @@ if __name__ == '__main__':
     try:
         print('Starting charging progress...')
         mc3k.start()
+        time.sleep(1)
         # Can this be optimized?
         batteries = mc3k.get_charging_progress()
         while any(slot.work == 1 for slot in batteries):
