@@ -1,7 +1,18 @@
 MC3000 Charger Core Module
 ==========================
 
+Core modules to work with the charger over the USB interface.
+
+ * The :mod:`mc3000` provides all functions to communicate with the charger
+   over USB.
+ * The :mod:`mc3000rrd` provides a simple API to the *RRDToolkit*.
+
 .. automodule:: mc3000
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: mc3000rrd
    :members:
    :undoc-members:
    :show-inheritance:

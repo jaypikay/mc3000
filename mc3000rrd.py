@@ -7,7 +7,11 @@
 # Distributed under terms of the MIT license.
 
 """
+MC3000 RRD Toolkit Library
+--------------------------
 
+RRD Tool library to create round robin databases and generate visual graphs of the charging
+progress.
 """
 
 import sys
@@ -33,16 +37,35 @@ LINE1:batbat_tem#00FF00:Temperature"""
 
 
 def execute_rrd_cmd(command_line):
+    """Run *command_line* as arguments for **rrdtool** command.
+
+    Command is executed as subprocess in backgroud.
+
+    :param command_line: command line arguments for *rrdtool update*
+    :type data_packet: str
+    """
     print(command_line)
     subprocess.run(command_line.split(' '), stderr=subprocess.DEVNULL)
 
 
 def create_rrd(filename, starttime):
+    """Create a new RRD with *filename* and start collecting data since *starttime* timestamp.
+
+    :param filename: Filename of the RRD file to be created
+    :type filename: str
+    """
     cmd = RRD_CREATE.format(filename=filename, start=starttime)
     execute_rrd_cmd(cmd)
 
 
 def update_rrd(filename, battery):
+    """Build the command line parameters with values to be stored in *filename* for each *battery*.
+
+    :param filename: Filename of the RRD file to be updated
+    :type filename: str
+    :param battery: Index of the battery the values were read from
+    :type battery: int
+    """
     cmd = RRD_UPDATE.format(filename=filename, timestamp=battery['ts'],
                             voltage=int(float(battery['voltage']) * 1000),
                             current=int(float(battery['current']) * 1000),
@@ -51,6 +74,18 @@ def update_rrd(filename, battery):
 
 
 def graph_rrd(png_file, rrd_file, starttime, endtime):
+    """Render a PNG image with the values stored in *rrd_file* within the timestamp range of
+    *starttime* and *endtime*. The resulting image will by stored with the filename *png_file*.
+
+    :param png_file: Filename of the PNG image file
+    :type png_file: str
+    :param rrd_file: Filename of the RRD file to read the values from
+    :type rrd_file: str
+    :param starttime: Timestamp to start
+    :type starttime: int
+    :param endtime: Timestamp to stop
+    :type endtime: int
+    """
     cmd = RRD_GRAPH.format(png_file=png_file, rrd_file=rrd_file,
                            ts_start=starttime, ts_end=endtime)
     execute_rrd_cmd(cmd)
