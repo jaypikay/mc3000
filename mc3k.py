@@ -50,7 +50,6 @@ if __name__ == '__main__':
             rptfile.write(' - Battery in Slot #{slot}\n'.format(slot=battery.slot+1))
             rptfile.write('   Voltage: {voltage}\n'.format(voltage=battery.voltage))
             rptfile.write('   Temperature: {bat_tem}\n'.format(bat_tem=battery.bat_tem))
-            occupied_slot.append(True)
         else:
             rptfile.write(' - Battery in Slot #{slot} not occupied\n'.format(slot=battery.slot+1))
     rptfile.write('\n')
