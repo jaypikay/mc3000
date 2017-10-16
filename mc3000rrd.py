@@ -19,11 +19,14 @@ import csv
 import subprocess
 
 
-RRD_CREATE = """rrdtool create {filename} --step=8 --start {start} \
-DS:voltage:GAUGE:8:0:4200 \
-DS:current:GAUGE:8:0:2000 \
-DS:bat_tem:GAUGE:8:0:100 \
-RRA:AVERAGE:0.5:1:1400"""
+RRD_CREATE = """rrdtool create {filename} --step=1 --start {start} \
+DS:voltage:GAUGE:1:0:U \
+DS:current:GAUGE:1:0:U \
+DS:bat_tem:GAUGE:1:0:U \
+RRA:AVERAGE:0.5:1:21600 \
+RRA:AVERAGE:0.5:2:10800 \
+RRA:MIN:0.5:3600:12 \
+RRA:MAX:0.5:3600:12"""
 
 RRD_UPDATE = """rrdtool update {filename} {timestamp}:{voltage}:{current}:{bat_tem}"""
 
