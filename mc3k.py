@@ -19,17 +19,24 @@ file is rendered for each RRD file.
 
 import os
 import time
+import csv
 from usb.core import USBError
 
 from mc3000 import MC3000
 from mc3000rrd import *
 
+# TODO: Commandline switch option
+VERBOSE = True
 
 RPT_NAME = 'MC3000-{date}-Report.txt'
+CSV_NAME = 'MC3000-{date}-Data.csv'
 RRD_NAME = 'MC3000-{date}-Slot{index}.rrd'
 PNG_NAME = 'MC3000-{date}-Slot{index}.png'
 
 OUTPUT_DIR = './data/'
+
+CSV_HEADERS = ('Battery', 'Timestamp', 'Voltage', 'Current', 'Temperature', 'Work', 'Work Time',
+               'dCaps', 'Caps Decimal', 'Inner Resistance')
 
 
 if __name__ == '__main__':
@@ -60,12 +67,26 @@ if __name__ == '__main__':
             rptfile.write(' - Battery in Slot #{slot} not occupied\n'.format(slot=battery.slot+1))
     rptfile.write('\n')
 
+    # Prepare CSV logger
+    csv_filename = os.path.join(OUTPUT_DIR, CSV_NAME.format(date=timestamp))
+    csvfd = open(csv_filename, 'w')
+    csvwriter = csv.DictWriter(csvfd, delimiter=';', fieldnames=CSV_HEADERS)
+    csvwriter.writeheader()
+
     try:
         print('Starting charging progress...')
         mc3k.start()
         time.sleep(1)
         # Can this be optimized?
-        batteries = mc3k.get_charging_progress()
+        retries = 3
+        while retries > 0:
+            try:
+                batteries = mc3k.get_charging_progress()
+                break
+            except USBError:
+                retries -= 1
+                print('Could not read data from device! Retry #{}'. format(3 - retries))
+        print('Monitoring device...')
         while any(slot.work == 1 for slot in batteries):
             ts = int(time.time())
             try:
@@ -79,7 +100,17 @@ if __name__ == '__main__':
                     if battery.work == 1:
                         rrd_filename = os.path.join(OUTPUT_DIR, RRD_NAME.format(index=battery.slot+1,
                                                                                 date=timestamp))
-                        update_rrd(rrd_filename, dataset)
+                        update_rrd(rrd_filename, dataset, verbose_output=VERBOSE)
+                        csvwriter.writerow({'Battery': battery.slot,
+                                            'Timestamp': timestamp,
+                                            'Voltage': battery.voltage,
+                                            'Current': battery.current,
+                                            'Temperature': battery.bat_tem,
+                                            'Work': battery.work,
+                                            'Work Time': battery.work_time,
+                                            'dCaps': battery.dcaps,
+                                            'Caps Decimal': battery.caps_decimal,
+                                            'Inner Resistance': battery.inner_resistance})
                 time.sleep(1)
                 batteries = mc3k.get_charging_progress()
             except USBError:
@@ -88,6 +119,7 @@ if __name__ == '__main__':
         pass
     finally:
         print('Terminating...')
+        csvfd.close()
         mc3k.close()
     end_ts = int(time.time())
 
