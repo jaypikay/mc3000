@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8:ts=8:et:sw=4:sts=4
 #
-# Copyright © 2017 jpk <jpk@dwarf>
+# Copyright © 2017 jpk <jpk@goatpr0n.de>
 #
 # Distributed under terms of the MIT license.
 
