@@ -17,6 +17,7 @@ progress. The progress itself is summurized in a report file. After the monitori
 file is rendered for each RRD file.
 """
 
+import os
 import time
 from usb.core import USBError
 
@@ -28,6 +29,8 @@ RPT_NAME = 'MC3000-{date}-Report.txt'
 RRD_NAME = 'MC3000-{date}-Slot{index}.rrd'
 PNG_NAME = 'MC3000-{date}-Slot{index}.png'
 
+OUTPUT_DIR = './data/'
+
 
 if __name__ == '__main__':
     mc3k = MC3000()
@@ -36,13 +39,16 @@ if __name__ == '__main__':
     print('Preparing RRDs for battery slots...')
     timestamp = int(time.time())
 
-    rptfile = open(RPT_NAME.format(date=timestamp), 'w')
+    rpt_filename = os.path.join(OUTPUT_DIR, RPT_NAME.format(date=timestamp))
+    rptfile = open(rpt_filename, 'w')
 
     for battery in mc3k.battery_data:
         print('  - Slot #{index}: {mode} {battery}'.format(index=battery.slot+1,
                                                            mode=battery.mode,
                                                            battery=battery.type))
-        create_rrd(RRD_NAME.format(index=battery.slot+1, date=timestamp), timestamp)
+        rrd_filename = os.path.join(OUTPUT_DIR, RRD_NAME.format(index=battery.slot+1,
+                                                                date=timestamp))
+        create_rrd(rrd_filename, timestamp)
 
     rptfile.write('Charger Report\n\nStart Time: {date}\nBatteries:\n'.format(date=timestamp))
     for battery in mc3k.get_charging_progress():
@@ -71,7 +77,9 @@ if __name__ == '__main__':
                         'bat_tem': battery.bat_tem
                     }
                     if battery.work == 1:
-                        update_rrd(RRD_NAME.format(index=battery.slot+1, date=timestamp), dataset)
+                        rrd_filename = os.path.join(OUTPUT_DIR, RRD_NAME.format(index=battery.slot+1,
+                                                                                date=timestamp))
+                        update_rrd(rrd_filename, dataset)
                 time.sleep(1)
                 batteries = mc3k.get_charging_progress()
             except USBError:
@@ -100,7 +108,9 @@ if __name__ == '__main__':
     print('Preparing graphs for battery slots...')
     for battery in mc3k.battery_data:
         print('  - Slot #{index}: Rendering graph...'.format(index=battery.slot+1))
-        graph_rrd(PNG_NAME.format(index=battery.slot+1, date=timestamp),
-                  RRD_NAME.format(index=battery.slot+1, date=timestamp),
-                  timestamp, end_ts)
+        rrd_filename = os.path.join(OUTPUT_DIR, RRD_NAME.format(index=battery.slot+1,
+                                                                date=timestamp))
+        png_filename = os.path.join(OUTPUT_DIR, PNG_NAME.format(index=battery.slot+1,
+                                                                date=timestamp))
+        graph_rrd(png_filename rrd_filename, timestamp, end_ts)
     print('Finished.')
