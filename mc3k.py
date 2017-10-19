@@ -33,6 +33,7 @@ CSV_NAME = 'MC3000-{date}-Data.csv'
 RRD_NAME = 'MC3000-{date}-Slot{index}.rrd'
 PNG_NAME = 'MC3000-{date}-Slot{index}.png'
 
+# TODO: Commandline switch option
 OUTPUT_DIR = './data/'
 
 CSV_HEADERS = ('Battery', 'Timestamp', 'Voltage', 'Current', 'Temperature', 'Work', 'Work Time',
