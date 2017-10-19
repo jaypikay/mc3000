@@ -112,5 +112,5 @@ if __name__ == '__main__':
                                                                 date=timestamp))
         png_filename = os.path.join(OUTPUT_DIR, PNG_NAME.format(index=battery.slot+1,
                                                                 date=timestamp))
-        graph_rrd(png_filename rrd_filename, timestamp, end_ts)
+        graph_rrd(png_filename, rrd_filename, timestamp, end_ts)
     print('Finished.')
