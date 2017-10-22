@@ -219,7 +219,7 @@ class MC3000(object):
             cycle_count = response[26]
             cycle_delay = response[27]
             cycle_mode = response[28]
-            peak_sense = response[28]
+            peak_sense = response[29]
             trickle = response[30] * 10
             hold_volt = response[32] << 8 | response[33]
             cut_temp = response[35] * 10
@@ -231,6 +231,8 @@ class MC3000(object):
                               end_cur, end_dcur, cycle_count, cycle_delay, cycle_mode, peak_sense,
                               trickle, hold_volt, cut_temp, cut_time, tem_unit, checksum)
             batteries.append(battery)
+
+            CHARGE_DATA_STRUCT = 'xBBBiiiiiiiBBBB
         return batteries
 
     def get_charging_progress(self, battery_slot='all'):
