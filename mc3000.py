@@ -352,7 +352,3 @@ if __name__ == '__main__':
     status = mc3000.get_charging_progress()
     for battery in status:
         print(battery)
-
-    status = mc3000.get_charging_progress(battery_slot=2)
-    for battery in status:
-        print(battery)
