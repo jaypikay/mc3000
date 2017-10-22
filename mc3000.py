@@ -219,7 +219,7 @@ class MC3000(object):
             cycle_count = response[26]
             cycle_delay = response[27]
             cycle_mode = response[28]
-            peak_sense = response[29]
+            peak_sense = response[28]
             trickle = response[30] * 10
             hold_volt = response[32] << 8 | response[33]
             cut_temp = response[35] * 10
