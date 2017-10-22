@@ -345,6 +345,12 @@ if __name__ == '__main__':
     mc3000 = MC3000()
     print(mc3000.get_machine_info())
 
+    print('>>> Checking for firmware updates...')
+    import requests
+    r = requests.get('http://upgrade.skyrc.com/?SN=' + mc3000.machine_info.machine_id)
+    print(r.text)
+    print('____________________________________')
+
     batteries = mc3000.get_battery_data()
     for battery in batteries:
         print(battery)
