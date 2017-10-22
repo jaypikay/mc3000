@@ -31,10 +31,13 @@ MachineInfo = namedtuple('machine_info',
                           'hardware_version', 'reserved', 'checksum', 'software_version',
                           'machine_id'])
 
+# Progress status response data
+PROGRESS_STATUS_STRUCT = '>xBBxBBhhhhhhxxxxxxB38xB'
 #: Tuple for charging progress information
 ProgressInfo = namedtuple('charge_data',
-                          ['slot', 'work', 'work_time', 'voltage', 'current', 'caps',
-                           'caps_decimal', 'dcaps', 'bat_tem', 'inner_resistance', 'checksum'])
+                          ['slot', 'type', 'status', 'work', 'work_time', 'voltage', 'current',
+                           'caps', 'bat_tem', 'inner_resistance', 'caps_decimal', 'checksum',
+                           'dcaps'])
 
 #: Battery response data
 CHARGE_DATA_STRUCT = '>xBBBBhhhhhhhBBBBBhBhB33xB'
@@ -69,6 +72,14 @@ CYCLE_MODE = {
     1: 'C>D>C',
     2: 'D>C',
     3: 'D>C>C'
+}
+#: Progress status during cycling
+CYCLE_STATUS = {
+    0: '',
+    1: '>Charge',
+    2: '>DisCharge',
+    3: '>Resting',
+    4: 'FINISH'
 }
 #: Temperature units
 TEM_UNIT = ('°C', '°F')
@@ -256,42 +267,31 @@ class MC3000(object):
             if response[-1] != self.packet_checksum(response):
                 continue
 
+            """
             #: TODO resolve unknown values
-            # num3 = response[2]
-            # num4 = response[3]
-            # num5 = response[4]
-            # print('num3  {}'.format(num3))
-            # print('num4  {}'.format(num4))
-            # print('num5  {}'.format(num5))
-            # print('num6  {}'.format(num6))
+            num4 = response[3]
+            num5 = response[4]
+            print('num3  {}'.format(num3))
+            print('num4  {}'.format(num4))
+            print('num5  {}'.format(num5))
+            print('num6  {}'.format(num6))
 
-            slot = response[1]
+            # num6 might by use to detect overflows in work mode
             work = response[5]
             num6 = 0
             #: TODO find out what *num6* is for
             if work >= 128:
                 num6 = work - 128 + 1
-            work_time = response[6] << 8 | response[7]
-            voltage = response[8] << 8 | response[9]
-            # why?
-            if work_time > 0:
-                work_time -= 1
-            current = response[10] << 8 | response[11]
-            caps = response[12] << 8 | response[13]
-            caps_decimal = response[24]
-            # purpose unknown
-            if work == 2:
-                dcaps = caps
-            else:
-                dcaps = None
-            bat_tem = response[14] << 8 | response[15]
-            bat_tem &= 0x7fff
-            inner_resistance = response[16] << 8 | response[17]
-            checksum = response[63]
+            """
 
-            status = ProgressInfo(slot, work, work_time, voltage, current, caps, caps_decimal,
-                                  dcaps, bat_tem, inner_resistance, checksum)
-            batteries.append(status)
+            data = unpack(PROGRESS_STATUS_STRUCT, response)
+            pinfo = ProgressInfo(*data, 0)
+            if pinfo.work == 2:
+                pinfo = pinfo._replace(dcaps=pinfo.caps)
+            if pinfo.work_time > 0:
+                pinfo = pinfo._replace(work_time=pinfo.work_time - 1)
+            pinfo = pinfo._replace(bat_tem=pinfo.bat_tem & 0x7fff)
+            batteries.append(pinfo)
         return batteries
 
     def send_raw(self, buffer):
