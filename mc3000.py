@@ -214,7 +214,6 @@ class MC3000(object):
             if response[-1] != self.packet_checksum(response):
                 continue
 
-            print('---')
             # CMD_OPCODE = response[0]
             data = unpack(CHARGE_DATA_STRUCT, response)
             battery = Battery(*data)
