@@ -19,11 +19,17 @@ import usb.core
 import usb.util
 
 
+#: Machine response data
+MACHINE_INFO_STRUCT = '>3xBBBBBBBBBBBBB6sBBhBBBBbB'
 #: Tuple for device information
 MachineInfo = namedtuple('machine_info',
-                         ['core_type', 'upgrade_type', 'is_encrypted', 'customer_id',
-                          'language_id', 'software_version', 'hardware_version', 'reserved',
-                          'checksum', 'machine_id'])
+                         ['Sys_Mem1', 'Sys_Mem2', 'Sys_Mem3', 'Sys_Mem4', 'Sys_Advance',
+                          'Sys_tUnit', 'Sys_Buzzer_Tone', 'Sys_Life_Hide', 'Sys_LiHv_Hide',
+                          'Sys_Eneloop_Hide', 'Sys_NiZn_Hide', 'Sys_Lcd_time', 'Sys_Min_Input',
+                          'core_type', 'upgrade_type', 'is_encrypted', 'customer_id',
+                          'language_id', 'software_version_hi', 'software_version_lo',
+                          'hardware_version', 'reserved', 'checksum', 'software_version',
+                          'machine_id'])
 
 #: Tuple for charging progress information
 ProgressInfo = namedtuple('charge_data',
@@ -137,16 +143,6 @@ class MC3000(object):
         self.send_raw(packet)
         response = self.read()
 
-        core_type = response[16:22].decode('utf-8', errors='replace')
-        upgrade_type = response[22]
-        is_encrypted = response[23] == b'\x01'
-        customer_id = response[24] * 256 + response[25]
-        language_id = response[26]
-        software_version = '{:.2f}'.format(response[27] * 1.0 + response[28] * 1.0 / 100.0)
-        hardware_version = response[29]
-        reserved = response[30]
-        checksum = response[31]
-
         crc = 0
         machine_id = ''
         # Calculate a device specific checksum (*crc*) and *machine_id*.
@@ -156,14 +152,25 @@ class MC3000(object):
             text2 = '{:X}'.format(response[16 + j])
             machine_id += '{s:{c}>{n}}'.format(s=text2, n=2, c='0')
 
+        data = unpack(MACHINE_INFO_STRUCT, response[:32])
+        machine = MachineInfo(*data, 0, machine_id)
+        machine = machine._replace(software_version='{:.2f}'.format(machine.software_version_hi \
+                * 1.0 + machine.software_version_lo * 1.0 / 100.0))
+        machine = machine._replace(core_type=machine.core_type.decode('utf-8', errors='replace'))
+        machine = machine._replace(Sys_Advance=machine.Sys_Advance == 1)
+        machine = machine._replace(Sys_tUnit=TEM_UNIT[machine.Sys_tUnit])
+        machine = machine._replace(Sys_Life_Hide=machine.Sys_Life_Hide == 1)
+        machine = machine._replace(Sys_LiHv_Hide=machine.Sys_LiHv_Hide == 1)
+        machine = machine._replace(Sys_Eneloop_Hide=machine.Sys_Eneloop_Hide == 1)
+        machine = machine._replace(Sys_NiZn_Hide=machine.Sys_NiZn_Hide == 1)
+        machine = machine._replace(is_encrypted=machine.is_encrypted == 1)
+
         # Prevent crc to be negative by masking it
         crc = ~crc & 0xff
         crc += 1
-        if not crc == checksum:
+        if not crc == machine.checksum:
             raise Exception('Checksum error in device data packet')
-        self.machine_info = MachineInfo(core_type, upgrade_type, is_encrypted, customer_id,
-                                        language_id, software_version, hardware_version, reserved,
-                                        checksum, machine_id)
+        self.machine_info = machine
         return self.machine_info
 
     @staticmethod
