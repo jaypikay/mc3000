@@ -157,7 +157,8 @@ class MC3000(object):
                                         checksum, machine_id)
         return self.machine_info
 
-    def packet_checksum(self, data_packet):
+    @staticmethod
+    def packet_checksum(data_packet):
         """Calculate the checksum for *data_packet*.
 
         :param data_packet: data packet to be verified
