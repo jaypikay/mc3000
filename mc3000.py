@@ -13,7 +13,7 @@ MC3000 USB interface library
 USB Interface library to communicate with the SKYRC MC3000 Battery Analyzer/Charger.
 """
 
-from struct import pack
+from struct import pack, unpack
 from collections import namedtuple
 import usb.core
 import usb.util
@@ -30,6 +30,8 @@ ProgressInfo = namedtuple('charge_data',
                           ['slot', 'work', 'work_time', 'voltage', 'current', 'caps',
                            'caps_decimal', 'dcaps', 'bat_tem', 'inner_resistance', 'checksum'])
 
+#: Battery response data
+CHARGE_DATA_STRUCT = '>xBBBBhhhhhhhBBBBBhBhB33xB'
 #: Tuple for battery operational configuration
 Battery = namedtuple('battery_data',
                      ['slot', 'work', 'type', 'mode', 'caps', 'cur', 'dCur', 'cut_volt',
@@ -54,6 +56,13 @@ BATTERY_TYPE = {
     4: 'NiCd',
     5: 'NiZn',
     6: 'Eneloop',
+}
+#: Cycle modes for charge cycling operations
+CYCLE_MODE = {
+    0: 'C>D',
+    1: 'C>D>C',
+    2: 'D>C',
+    3: 'D>C>C'
 }
 #: Temperature units
 TEM_UNIT = ('°C', '°F')
@@ -205,34 +214,15 @@ class MC3000(object):
             if response[-1] != self.packet_checksum(response):
                 continue
 
-            slot = response[1]
-            work = response[2]
-            battery_type = BATTERY_TYPE[response[3]]
-            mode = BATTERY_MODE[response[4]]
-            caps = response[5] << 8 | response[6]
-            cur = response[9] << 8 | response[10]
-            dcur = response[12] << 8 | response[13]
-            cut_volt = response[15] << 8 | response[16]
-            end_volt = response[18] << 8 | response[19]
-            end_cur = response[21] << 8 | response[22]
-            end_dcur = response[24] << 8 | response[25]
-            cycle_count = response[26]
-            cycle_delay = response[27]
-            cycle_mode = response[28]
-            peak_sense = response[28]
-            trickle = response[30] * 10
-            hold_volt = response[32] << 8 | response[33]
-            cut_temp = response[35] * 10
-            cut_time = response[37] << 8 | response[38]
-            tem_unit = TEM_UNIT[response[40]]
-            checksum = response[63]
-
-            battery = Battery(slot, work, battery_type, mode, caps, cur, dcur, cut_volt, end_volt,
-                              end_cur, end_dcur, cycle_count, cycle_delay, cycle_mode, peak_sense,
-                              trickle, hold_volt, cut_temp, cut_time, tem_unit, checksum)
+            print('---')
+            # CMD_OPCODE = response[0]
+            data = unpack(CHARGE_DATA_STRUCT, response)
+            battery = Battery(*data)
+            battery = battery._replace(type=BATTERY_TYPE[battery.type])
+            battery = battery._replace(mode=BATTERY_MODE[battery.mode])
+            battery = battery._replace(cycle_mode=CYCLE_MODE[battery.cycle_mode])
+            battery = battery._replace(tem_unit=TEM_UNIT[battery.tem_unit])
             batteries.append(battery)
-
-            CHARGE_DATA_STRUCT = 'xBBBiiiiiiiBBBB
         return batteries
 
     def get_charging_progress(self, battery_slot='all'):
